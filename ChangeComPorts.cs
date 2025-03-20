@@ -121,13 +121,17 @@ else
 }
 
 //Extracts the data contained within the default windows COM1 key, then renames the key while preserving the original data contained within it.
+
 RegistryKey currentControlArbiterKey = Registry.LocalMachine.OpenSubKey("SYSTEM\\CurrentControlSet\\Enum\\ACPI\\PNP0501\\SIOBUAR2", true);
 if (currentControlArbiterKey != null)
 {
 
     String regDataTwo = currentControlArbiterKey.GetValue("COM9").ToString();
-    //Console.WriteLine(regDataTwo);
-    currentControlArbiterKey.SetValue("COM9", regDataTwo, RegistryValueKind.String);
+    if (regDataTwo != null)
+    {
+        currentControlArbiterKey.SetValue("COM9", regDataTwo, RegistryValueKind.String);
+    }
+
     currentControlArbiterKey.Close();
 }
 else
@@ -140,9 +144,12 @@ else
 RegistryKey controlOneArbiterKey = Registry.LocalMachine.OpenSubKey("SYSTEM\\ControlSet001\\Enum\\ACPI\\PNP0501\\SIOBUAR2", true);
 if (controlOneArbiterKey != null)
 {
+
     String regData = controlOneArbiterKey.GetValue("COM9").ToString();
-    //Console.WriteLine(regData);
-    controlOneArbiterKey.SetValue("COM9", regData, RegistryValueKind.String);
+    if (regData != null)
+    {
+        controlOneArbiterKey.SetValue("COM9", regData, RegistryValueKind.String);
+    }
     controlOneArbiterKey.Close();
 }
 else
@@ -305,18 +312,8 @@ else
 
 Console.WriteLine("COM ports now reserved.");
 
-//pnputil /restart-device "FTDIBUS\VID_0403+PID_6001+TOPAZBSBA\0000"
-var pnpCall = new System.Diagnostics.Process();
-System.Diagnostics.ProcessStartInfo pnpArgs = new System.Diagnostics.ProcessStartInfo();
-pnpArgs.FileName = @"pnputil.exe";
-pnpArgs.Arguments = "/restart-device \"FTDIBUS\\VID_0403+PID_6001+TOPAZBSBA\\0000\"";
-pnpArgs.Verb = "runas";
-pnpCall.StartInfo = pnpArgs;
-pnpCall.Start();
+//Printing all COM ports to show change.
 
-//Resetting Topaz device
-
-Console.WriteLine("\nAll operations complete.");
 Console.WriteLine("Ports after change:");
 allPorts = System.IO.Ports.SerialPort.GetPortNames();
 foreach (string port in allPorts)
@@ -324,7 +321,24 @@ foreach (string port in allPorts)
     Console.WriteLine(port);
 }
 
-Console.WriteLine("Press enter to exit or click x.");
+Console.WriteLine("\nAll registry changes comeplete, now resetting Topaz device.");
+//Resetting Topaz device
+//pnputil /restart-device "FTDIBUS\VID_0403+PID_6001+TOPAZBSBA\0000"
+try
+{
+    var pnpCall = new System.Diagnostics.Process();
+    System.Diagnostics.ProcessStartInfo pnpArgs = new System.Diagnostics.ProcessStartInfo();
+    pnpArgs.FileName = @"pnputil.exe";
+    pnpArgs.Arguments = "/restart-device \"FTDIBUS\\VID_0403+PID_6001+TOPAZBSBA\\0000\"";
+    pnpArgs.Verb = "runas";
+    pnpCall.StartInfo = pnpArgs;
+    pnpCall.Start();
+}
+catch 
+{
+    Console.WriteLine("Failed to run pnputil.exe, reseat Topaz manually.");
+}
+
 Console.ReadLine();
 Environment.Exit(0);
 

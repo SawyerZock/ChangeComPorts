@@ -1,4 +1,4 @@
-﻿// Author: Sawyer Zock
+// Author: Sawyer Zock
 // This program reassigns the com port of the default windows Communications Port from COM1 to COM9, then assigns the USB Serial Port for a Topaz Signature Pad to COM1.
 // After this program is run the Topaz device must be disconnected then reconnected, either physically or through CMD/Powershell
 //
@@ -10,28 +10,53 @@ using Microsoft.Win32;
 
 
 Console.WriteLine("Com Port script initilized...");
-Console.WriteLine("Com Ports before change:"); 
+Console.WriteLine("Com Ports before change:");
 String[] allPorts = System.IO.Ports.SerialPort.GetPortNames();
 foreach (string port in allPorts)
 {
     Console.WriteLine(port);
 }
 
-Console.WriteLine("Changing default windows Communication Port to COM9");
+Console.WriteLine("Releasing COM ports.");
 
-//Sets serial com devicemap to correct values
-RegistryKey deviceMapSerialComKey = Registry.LocalMachine.OpenSubKey("HARDWARE\\DEVICEMAP\\SERIALCOMM", true);
-if (deviceMapSerialComKey != null)
+//Release active com parts list in current control set, byte 0 is com1 - 8, byte 1 is 9-16. We want both to be 0 to release the com ports.
+RegistryKey currentControlArbiterClear = Registry.LocalMachine.OpenSubKey("SYSTEM\\CurrentControlSet\\Control\\COM Name Arbiter", true);
+if (currentControlArbiterClear != null)
 {
-    deviceMapSerialComKey.SetValue("\\Device\\Serial0", "COM9", RegistryValueKind.String);
-    deviceMapSerialComKey.SetValue("\\Device\\VCP0", "COM1", RegistryValueKind.String);
-    deviceMapSerialComKey.Close();
+    byte[] data = (byte[])currentControlArbiterClear.GetValue("ComDB");
+    if (data != null)
+    {
+        data[0] = (byte)0x00;
+        data[1] = (byte)0x00;
+        currentControlArbiterClear.SetValue("ComDB", data);
+    }
+    currentControlArbiterClear.Close();
 }
 else
 {
-    Console.WriteLine("HARDWARE\\DEVICEMAP\\SERIALCOMM Registry Key is Null, Windows must have changed the registry location for Device Map");
-    Console.WriteLine("Contact Sawyer Zock to update this script.");
+    Console.WriteLine("SYSTEM\\CurrentControlSet\\Control\\COM Name Arbiter is Null, something is VERY wrong.");
 }
+
+//Releasing COM ports for controlset1
+RegistryKey controlOneArbiterClear = Registry.LocalMachine.OpenSubKey("SYSTEM\\ControlSet001\\Control\\COM Name Arbiter", true);
+if (controlOneArbiterClear != null)
+{
+    byte[] data = (byte[])controlOneArbiterClear.GetValue("ComDB");
+    if (data != null)
+    {
+        data[0] = (byte)0x00;
+        data[1] = (byte)0x00;
+        controlOneArbiterClear.SetValue("ComDB", data);
+    }
+    controlOneArbiterClear.Close();
+}
+else
+{
+    Console.WriteLine("SYSTEM\\ControlSet001\\Control\\COM Name Arbiter is Null, something is VERY wrong.");
+}
+
+Console.WriteLine("COM ports now released.");
+
 
 //Sets port to COM9 in current control set
 RegistryKey currentControlDefaultPort = Registry.LocalMachine.OpenSubKey("SYSTEM\\CurrentControlSet\\Enum\\ACPI\\PNP0501\\SIOBUAR2\\Device Parameters", true);
@@ -167,43 +192,6 @@ else
 }
 
 
-//Change active com parts list in current control set, byte 0 is com1 - 8, byte 1 is 9-16. Ports 1 and 9 will be active, so we set the first two bytes to 01 01
-RegistryKey currentControlArbiter = Registry.LocalMachine.OpenSubKey("SYSTEM\\CurrentControlSet\\Control\\COM Name Arbiter", true);
-if (currentControlArbiter != null)
-{
-    byte[] data = (byte[])currentControlArbiter.GetValue("ComDB");
-    if (data != null)
-    {
-        data[0] = (byte)0x01;
-        data[1] = (byte)0x01;
-        currentControlArbiter.SetValue("ComDB", data);
-    }
-    currentControlArbiter.Close();
-}
-else
-{
-    Console.WriteLine("SYSTEM\\CurrentControlSet\\Control\\COM Name Arbiter is Null, something is VERY wrong.");
-}
-
-//Change active com parts list in control set 1, byte 0 is com1 - 8, byte 1 is 9-16. Ports 1 and 9 will be active, so we set the first two bytes to 01 01
-RegistryKey controlOneArbiter = Registry.LocalMachine.OpenSubKey("SYSTEM\\ControlSet001\\Control\\COM Name Arbiter", true);
-if (controlOneArbiter != null)
-{
-    byte[] data = (byte[])controlOneArbiter.GetValue("ComDB");
-    if (data != null)
-    {
-        data[0] = (byte)0x01;
-        data[1] = (byte)0x01;
-        controlOneArbiter.SetValue("ComDB", data);
-    }
-    controlOneArbiter.Close();
-}
-else
-{
-    Console.WriteLine("SYSTEM\\ControlSet001\\Control\\COM Name Arbiter is Null, something is VERY wrong.");
-}
-
-Console.WriteLine("Topaz Communication Port is now assigned to COM1.");
 
 
 Console.WriteLine("Setting Topaz advanced options...");
@@ -247,6 +235,63 @@ else
 }
 
 Console.WriteLine("Topaz advanced settings changed.");
+
+
+//Change active com parts list in current control set, byte 0 is com1 - 8, byte 1 is 9-16. Ports 1 and 9 will be active, so we set the first two bytes to 01 01
+RegistryKey currentControlArbiter = Registry.LocalMachine.OpenSubKey("SYSTEM\\CurrentControlSet\\Control\\COM Name Arbiter", true);
+if (currentControlArbiter != null)
+{
+    byte[] data = (byte[])currentControlArbiter.GetValue("ComDB");
+    if (data != null)
+    {
+        data[0] = (byte)0x01;
+        data[1] = (byte)0x01;
+        currentControlArbiter.SetValue("ComDB", data);
+    }
+    currentControlArbiter.Close();
+}
+else
+{
+    Console.WriteLine("SYSTEM\\CurrentControlSet\\Control\\COM Name Arbiter is Null, something is VERY wrong.");
+}
+
+//Change active com parts list in control set 1, byte 0 is com1 - 8, byte 1 is 9-16. Ports 1 and 9 will be active, so we set the first two bytes to 01 01
+RegistryKey controlOneArbiter = Registry.LocalMachine.OpenSubKey("SYSTEM\\ControlSet001\\Control\\COM Name Arbiter", true);
+if (controlOneArbiter != null)
+{
+    byte[] data = (byte[])controlOneArbiter.GetValue("ComDB");
+    if (data != null)
+    {
+        data[0] = (byte)0x01;
+        data[1] = (byte)0x01;
+        controlOneArbiter.SetValue("ComDB", data);
+    }
+    controlOneArbiter.Close();
+}
+else
+{
+    Console.WriteLine("SYSTEM\\ControlSet001\\Control\\COM Name Arbiter is Null, something is VERY wrong.");
+}
+
+Console.WriteLine("COM ports now released.");
+
+
+//Sets serial com devicemap to correct values
+RegistryKey deviceMapSerialComKey = Registry.LocalMachine.OpenSubKey("HARDWARE\\DEVICEMAP\\SERIALCOMM", true);
+if (deviceMapSerialComKey != null)
+{
+    deviceMapSerialComKey.SetValue("\\Device\\Serial0", "COM9", RegistryValueKind.String);
+    deviceMapSerialComKey.SetValue("\\Device\\VCP0", "COM1", RegistryValueKind.String);
+    deviceMapSerialComKey.Close();
+}
+else
+{
+    Console.WriteLine("HARDWARE\\DEVICEMAP\\SERIALCOMM Registry Key is Null, Windows must have changed the registry location for Device Map");
+    Console.WriteLine("Contact Sawyer Zock to update this script.");
+}
+
+Console.WriteLine("COM ports now reserved.");
+
 
 
 Console.WriteLine("All operations complete.");

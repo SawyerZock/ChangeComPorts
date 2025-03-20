@@ -1,11 +1,21 @@
 // Author: Sawyer Zock
 // This program reassigns the com port of the default windows Communications Port from COM1 to COM9, then assigns the USB Serial Port for a Topaz Signature Pad to COM1.
-// After this program is run the Topaz device must be disconnected then reconnected, either physically or through CMD/Powershell
+// After this program is run the Topaz device must be disconnected then reconnected, either physically or through CMD/Powershell like below.
 //
+//pnputil /restart-device "FTDIBUS\VID_0403+PID_6001+TOPAZBSBA\0000"
+//or
+//pnputil /disable-device "FTDIBUS\VID_0403+PID_6001+TOPAZBSBA\0000"
+//pnputil / enable - device "FTDIBUS\VID_0403+PID_6001+TOPAZBSBA\0000"
+//
+//I have integrated this at the end of the program.
 // Note: Reassigning COM ports programatically should generally not be done, COM ports should be set by the drivers.
 // This is for cases when you do not have the access or authority to properly set up devices to use any port dynamically rather than being statically assigned. 
+
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO.Ports;
+using System.Text.Json.Serialization;
 using Microsoft.Win32;
 
 
@@ -18,6 +28,9 @@ foreach (string port in allPorts)
 }
 
 Console.WriteLine("Releasing COM ports.");
+
+
+
 
 //Release active com parts list in current control set, byte 0 is com1 - 8, byte 1 is 9-16. We want both to be 0 to release the com ports.
 RegistryKey currentControlArbiterClear = Registry.LocalMachine.OpenSubKey("SYSTEM\\CurrentControlSet\\Control\\COM Name Arbiter", true);
@@ -273,7 +286,7 @@ else
     Console.WriteLine("SYSTEM\\ControlSet001\\Control\\COM Name Arbiter is Null, something is VERY wrong.");
 }
 
-Console.WriteLine("COM ports now released.");
+Console.WriteLine("COM ports now reserved.");
 
 
 //Sets serial com devicemap to correct values
@@ -292,9 +305,18 @@ else
 
 Console.WriteLine("COM ports now reserved.");
 
+//pnputil /restart-device "FTDIBUS\VID_0403+PID_6001+TOPAZBSBA\0000"
+var pnpCall = new System.Diagnostics.Process();
+System.Diagnostics.ProcessStartInfo pnpArgs = new System.Diagnostics.ProcessStartInfo();
+pnpArgs.FileName = @"pnputil.exe";
+pnpArgs.Arguments = "/restart-device \"FTDIBUS\\VID_0403+PID_6001+TOPAZBSBA\\0000\"";
+pnpArgs.Verb = "runas";
+pnpCall.StartInfo = pnpArgs;
+pnpCall.Start();
 
+//Resetting Topaz device
 
-Console.WriteLine("All operations complete.");
+Console.WriteLine("\nAll operations complete.");
 Console.WriteLine("Ports after change:");
 allPorts = System.IO.Ports.SerialPort.GetPortNames();
 foreach (string port in allPorts)

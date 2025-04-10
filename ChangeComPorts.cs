@@ -8,9 +8,9 @@
 //pnputil /enable - device "FTDIBUS\VID_0403+PID_6001+TOPAZBSBA\0000"
 //
 //I have integrated this at the end of the program.
-// Note: Reassigning COM ports programatically should generally not be done, COM ports should be set by the drivers.
-// This is for cases when you do not have the access or authority to properly set up devices to use any port dynamically rather than being statically assigned. 
-
+//Note: Reassigning COM ports programatically should generally not be done, COM ports should be set by the drivers.
+//This is for cases when you do not have the access or authority to properly set up devices to use any port dynamically rather than being statically assigned. 
+//Test
 using System;
 using System.ComponentModel;
 using System.Diagnostics;

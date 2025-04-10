@@ -172,7 +172,8 @@ static void resetTopaz()
     }
     catch
     {
-        Console.WriteLine("Failed to run pnputil.exe, reset Topaz manually by unplugging and replugging it.");
+        Console.WriteLine("Failed to run pnputil.exe, reset Topaz manually by unplugging and replugging it or run the command below in command prompt:");
+        Console.WriteLine("pnputil /restart-device \"FTDIBUS\\VID_0403+PID_6001+TOPAZBSBA\\0000\"");
     }
     Console.ReadLine();
 }
